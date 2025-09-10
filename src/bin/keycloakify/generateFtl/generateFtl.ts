@@ -160,17 +160,13 @@ export function generateFtlFilesCodeFactory(params: {
             }
         });
     }
-
-    const partiallyFixedIndexHtmlCode = $.html();
-
     function generateFtlFilesCode(params: { pageId: string }): {
         ftlCode: string;
     } {
         const { pageId } = params;
 
-        const $ = cheerio.load(partiallyFixedIndexHtmlCode);
-
-        let ftlCode = $.html();
+        // Return just the JSON placeholder that will be replaced with FTL content
+        let ftlCode = ftlObjectToJsCodeDeclaringAnObjectPlaceholder;
 
         Object.entries({
             [ftlObjectToJsCodeDeclaringAnObjectPlaceholder]:

@@ -8,133 +8,36 @@
     "themeVersion": "{{themeVersion}}",
     "resourcesPath": ""
 }>
-
 <#if url?? && url?is_hash && url.resourcesPath?? && url.resourcesPath?is_string>
     <#assign xKeycloakify = xKeycloakify + { "resourcesPath": url.resourcesPath }>
 </#if>
 <#if resourceUrl?? && resourceUrl?is_string>
     <#assign xKeycloakify = xKeycloakify + { "resourcesPath": resourceUrl }>
 </#if>
-
-const kcContext = ${toJsDeclarationString(.data_model, [])?no_esc};
-kcContext.keycloakifyVersion = "${xKeycloakify.keycloakifyVersion}";
-kcContext.themeVersion = "${xKeycloakify.themeVersion}";
-kcContext.themeType = "${xKeycloakify.themeType}";
-kcContext.themeName = "${xKeycloakify.themeName}";
-kcContext.pageId = "${xKeycloakify.pageId}";
-kcContext.ftlTemplateFileName = "${xKeycloakify.ftlTemplateFileName}";
-
-<@addNonAutomaticallyGatherableMessagesToXKeycloakifyMessages />
-
-kcContext["x-keycloakify"] = {};
-
-kcContext["x-keycloakify"].resourcesPath = "${xKeycloakify.resourcesPath}";
-
 {
-    var messages = {};
+"kcContext": ${toJsDeclarationString(.data_model, [])?no_esc},
+"pageId": "${xKeycloakify.pageId}",
+"ftlTemplateFileName": "${xKeycloakify.ftlTemplateFileName}",
+"themeType": "${xKeycloakify.themeType}",
+"themeName": "${xKeycloakify.themeName}",
+"keycloakifyVersion": "${xKeycloakify.keycloakifyVersion}",
+"themeVersion": "${xKeycloakify.themeVersion}",
+"resourcesPath": "${xKeycloakify.resourcesPath}",
+"resourcesCommonPath": "${xKeycloakify.resourcesPath}/{{RESOURCES_COMMON}}",
+"x-keycloakify": {
+"resourcesPath": "<#if url?? && url?is_hash && url.resourcesPath?? && url.resourcesPath?is_string>${url.resourcesPath}<#elseif resourceUrl?? && resourceUrl?is_string>${resourceUrl}</#if>",
+"messages": {
+<@addNonAutomaticallyGatherableMessagesToXKeycloakifyMessages />
+<#if xKeycloakify?? && xKeycloakify.messages??>
     <#list xKeycloakify.messages as key, resolvedMsg>
-        messages["${key}"] = decodeHtmlEntities("${resolvedMsg?js_string}");
+        "${key}": "${resolvedMsg?js_string}"<#if key_has_next>,</#if>
     </#list>
-    kcContext["x-keycloakify"].messages = messages;
+</#if>
 }
-
-if( 
-    kcContext.url instanceof Object &&
-    typeof kcContext.url.resourcesPath === "string"
-){
-    kcContext.url.resourcesCommonPath = kcContext.url.resourcesPath + "/{{RESOURCES_COMMON}}";
+},
+"profile": {
+"attributesByName": "<#if profile?? && profile.attributes??>${profile.attributes?map(attr -> '\"' + attr.name + '\": ' + attr)?join(', ')}</#if>"
 }
-
-if( kcContext.messagesPerField ){
-    var existsError_singleFieldName = kcContext.messagesPerField.existsError;
-    kcContext.messagesPerField.existsError = function (){
-        for( let i = 0; i < arguments.length; i++ ){
-            if( existsError_singleFieldName(arguments[i]) ){
-                return true;
-            }
-        }
-        return false;
-    };
-    kcContext.messagesPerField.exists = function (fieldName) {
-        return kcContext.messagesPerField.get(fieldName) !== "";
-    };
-    kcContext.messagesPerField.printIfExists = function (fieldName, text) {
-        return kcContext.messagesPerField.exists(fieldName) ? text : undefined;
-    };
-    kcContext.messagesPerField.getFirstError = function () {
-        for( let i = 0; i < arguments.length; i++ ){
-            const fieldName = arguments[i];
-            if( kcContext.messagesPerField.existsError(fieldName) ){
-                return kcContext.messagesPerField.get(fieldName);
-            }
-        }
-    };
-}
-attributes_to_attributesByName: {
-    if( !kcContext.profile ){
-        break attributes_to_attributesByName;
-    }
-    if( !kcContext.profile.attributes ){
-        break attributes_to_attributesByName;
-    }
-    var attributes = kcContext.profile.attributes;
-    delete kcContext.profile.attributes;
-    kcContext.profile.attributesByName = {};
-    attributes.forEach(function(attribute){
-        kcContext.profile.attributesByName[attribute.name] = attribute;
-    });
-}
-
-redirect_to_dev_server: {
-
-    switch(kcContext.themeType){
-        case "login":
-            break redirect_to_dev_server;
-        case "account":
-            if( kcContext.pageId !== "index.ftl" ){
-                break redirect_to_dev_server;
-            }
-            break;
-        case "admin":
-            break;
-        default: 
-            break redirect_to_dev_server;
-    }
-
-    const devSeverPort = kcContext.properties.{{KEYCLOAKIFY_SPA_DEV_SERVER_PORT}};
-
-    if( !devSeverPort ){
-        break redirect_to_dev_server;
-    }
-
-    const redirectUrl = new URL(window.location.href);
-
-    const keycloakServerPort = redirectUrl.port;
-
-    redirectUrl.port = devSeverPort;
-
-    delete kcContext.msgJSON;
-
-    console.log(kcContext);
-
-    redirectUrl.searchParams.set("kcContext", JSON.stringify(kcContext));
-    redirectUrl.searchParams.set("keycloakServerPort", keycloakServerPort);
-
-    window.location.href = redirectUrl.toString();
-
-}
-
-
-window.kcContext = kcContext;
-
-function decodeHtmlEntities(htmlStr){
-    var element = decodeHtmlEntities.element;
-    if (!element) {
-        element = document.createElement("textarea");
-        decodeHtmlEntities.element = element;
-    }
-    element.innerHTML = htmlStr;
-    return element.value;
 }
 
 <#function toJsDeclarationString object path>
@@ -280,7 +183,7 @@ function decodeHtmlEntities(htmlStr){
                 <#attempt>
                     <#-- https://github.com/keycloak/keycloak/blob/3a2bf0c04bcde185e497aaa32d0bb7ab7520cf4a/themes/src/main/resources/theme/base/login/template.ftl#L63 -->
                     <#if !(auth?has_content && auth.showUsername() && !auth.showResetCredentials())>
-                        <#local outSeq += ["/*" + path?join(".") + "." + key + " excluded*/"]>
+<#--                        <#local outSeq += ["/*" + path?join(".") + "." + key + " excluded*/"]>-->
                         <#continue>
                     </#if>
                 <#recover>
@@ -325,6 +228,11 @@ function decodeHtmlEntities(htmlStr){
 
         </#list>
 
+        <#-- Then fix the last element by removing the trailing comma -->
+        <#if outSeq?has_content>
+            <#local lastIndex = outSeq?size - 1>
+            <#local outSeq = outSeq[0..<lastIndex] + [outSeq[lastIndex]?remove_ending(",")]>
+        </#if>
         <#return (["{"] + outSeq?map(str -> ""?right_pad(4 * (path?size + 1)) + str) + [ ""?right_pad(4 * path?size) + "}"])?join("\n")>
 
     </#if>
@@ -394,100 +302,6 @@ function decodeHtmlEntities(htmlStr){
             </#list>
         </#if>
 
-        <#if areSamePath(path, ["messagesPerField", "get"])>
-
-            <#local jsFunctionCode = "function (fieldName) { ">
-
-            <#list fieldNames as fieldName>
-
-                <#-- See: https://github.com/keycloakify/keycloakify/issues/217 -->
-                <#if xKeycloakify.pageId == "login.ftl" >
-
-                    <#if fieldName == "username">
-
-                        <#local jsFunctionCode += "if(fieldName === 'username' || fieldName === 'password' ){ ">
-
-                        <#if messagesPerField.exists('username') || messagesPerField.exists('password')>
-                            <#local jsFunctionCode += "return kcContext.message && kcContext.message.summary ? kcContext.message.summary : 'error'; ">
-                        <#else>
-                            <#local jsFunctionCode += "return ''; ">
-                        </#if>
-
-                        <#local jsFunctionCode += "} ">
-
-                        <#continue>
-                    </#if>
-
-                    <#if fieldName == "password">
-                        <#continue>
-                    </#if>
-
-                </#if>
-
-                <#local jsFunctionCode += "if(fieldName === '" + fieldName + "'){ ">
-
-                <#if messagesPerField.exists('${fieldName}')>
-                    <#local jsFunctionCode += 'return decodeHtmlEntities("' + messagesPerField.get('${fieldName}')?js_string + '"); '>
-                <#else>
-                    <#local jsFunctionCode += "return ''; ">
-                </#if>
-
-                <#local jsFunctionCode += "} ">
-
-            </#list>
-
-            <#local jsFunctionCode += "}">
-
-            <#return jsFunctionCode>
-
-        </#if>
-
-        <#if areSamePath(path, ["messagesPerField", "existsError"])>
-
-            <#local jsFunctionCode = "function (fieldName) { ">
-
-            <#list fieldNames as fieldName>
-
-                <#-- See: https://github.com/keycloakify/keycloakify/issues/217 -->
-                <#if xKeycloakify.pageId == "login.ftl" >
-                    <#if fieldName == "username">
-
-                        <#local jsFunctionCode += "if(fieldName === 'username' || fieldName === 'password' ){ ">
-
-                        <#if messagesPerField.existsError('username') || messagesPerField.existsError('password')>
-                            <#local jsFunctionCode += "return true; ">
-                        <#else>
-                            <#local jsFunctionCode += "return false; ">
-                        </#if>
-
-                        <#local jsFunctionCode += "} ">
-
-                        <#continue>
-                    </#if>
-
-                    <#if fieldName == "password">
-                        <#continue>
-                    </#if>
-                </#if>
-
-                <#local jsFunctionCode += "if(fieldName === '" + fieldName + "' ){ ">
-
-                <#if messagesPerField.existsError('${fieldName}')>
-                    <#local jsFunctionCode += 'return true; '>
-                <#else>
-                    <#local jsFunctionCode += "return false; ">
-                </#if>
-
-                <#local jsFunctionCode += "}">
-
-            </#list>
-
-            <#local jsFunctionCode += "}">
-
-            <#return jsFunctionCode>
-
-        </#if>
-
         <#if xKeycloakify.themeType == "account" && areSamePath(path, ["realm", "isInternationalizationEnabled"])>
             <#attempt>
                 <#return realm.isInternationalizationEnabled()?c>
@@ -550,6 +364,11 @@ function decodeHtmlEntities(htmlStr){
 
         </#list>
 
+        <#-- Then fix the last element by removing the trailing comma -->
+        <#if outSeq?has_content>
+            <#local lastIndex = outSeq?size - 1>
+            <#local outSeq = outSeq[0..<lastIndex] + [outSeq[lastIndex]?remove_ending(",")]>
+        </#if>
         <#return (["["] + outSeq?map(str -> ""?right_pad(4 * (path?size + 1)) + str) + [ ""?right_pad(4 * path?size) + "]"])?join("\n")>
 
     </#if>
