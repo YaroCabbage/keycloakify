@@ -1,10 +1,10 @@
 {
-    "name": "keycloakify",
+    "name": "keycloakify-info",
     "version": "11.9.3",
     "description": "Framework to create custom Keycloak UIs",
     "repository": {
         "type": "git",
-        "url": "git://github.com/keycloakify/keycloakify.git"
+        "url": "git://github.com/YaroCabbage/keycloakify.git"
     },
     "scripts": {
         "prepare": "tsx scripts/generate-i18n-messages.ts",
