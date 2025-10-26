@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - info_mode
   pull_request:
     branches:
       - main
