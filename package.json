@@ -1,5 +1,5 @@
 {
-    "name": "keycloakify-info",
+    "name": "keycloakify",
     "version": "11.9.3",
     "description": "Framework to create custom Keycloak UIs",
     "repository": {
